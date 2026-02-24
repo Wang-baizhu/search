@@ -43,3 +43,4 @@ build/
 .mvn
 search.iml
 application.properties
+.env
