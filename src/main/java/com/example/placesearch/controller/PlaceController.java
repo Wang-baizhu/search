@@ -2,6 +2,7 @@ package com.example.placesearch.controller;
 
 import com.example.placesearch.dto.request.AroundSearchRequest;
 import com.example.placesearch.dto.request.CitySearchRequest;
+import com.example.placesearch.dto.request.PolygonSearchRequest;
 import com.example.placesearch.dto.response.SearchResponse;
 import com.example.placesearch.service.PlaceService;
 import lombok.RequiredArgsConstructor;
@@ -51,5 +52,28 @@ public class PlaceController {
         request.setPageNum(pageNum);
 
         return placeService.searchByCity(request);
+    }
+
+    @GetMapping("/polygon")
+    public SearchResponse polygonSearch(
+            @RequestParam String polygon,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) String types,
+            @RequestParam(name = "page_size", required = false) Integer pageSize,
+            @RequestParam(name = "page_num", required = false) Integer pageNum) {
+
+        PolygonSearchRequest request = new PolygonSearchRequest();
+        request.setPolygon(polygon);
+        request.setYear(year);
+        request.setTypes(types);
+        request.setPageSize(pageSize);
+        request.setPageNum(pageNum);
+
+        return placeService.searchByPolygon(request);
+    }
+
+    @PostMapping("/polygon")
+    public SearchResponse polygonSearchPost(@RequestBody PolygonSearchRequest request) {
+        return placeService.searchByPolygon(request);
     }
 }

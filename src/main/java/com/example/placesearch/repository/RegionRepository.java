@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface RegionRepository extends JpaRepository<Region, String> {
@@ -25,7 +26,7 @@ public interface RegionRepository extends JpaRepository<Region, String> {
                     "POWER(SIN(RADIANS(r.marlon - :lon) / 2), 2)" +
                     "))" +
                     ")) <= :radius " +
-                    "AND (:year IS NULL OR YEAR(r.timestamp) = :year) " +
+                    "AND (:yearStart IS NULL OR (r.timestamp >= :yearStart AND r.timestamp < :yearEnd)) " +
                     "AND (:typeCodesEmpty = true OR r.typecode IN (:typeCodes))",
             nativeQuery = true
     )
@@ -33,7 +34,8 @@ public interface RegionRepository extends JpaRepository<Region, String> {
             @Param("lon") double lon,
             @Param("lat") double lat,
             @Param("radius") double radius,
-            @Param("year") Integer year,
+            @Param("yearStart") LocalDateTime yearStart,
+            @Param("yearEnd") LocalDateTime yearEnd,
             @Param("typeCodes") List<String> typeCodes,
             @Param("typeCodesEmpty") boolean typeCodesEmpty,
             Pageable pageable
@@ -41,12 +43,60 @@ public interface RegionRepository extends JpaRepository<Region, String> {
 
     @Query("SELECT r FROM Region r " +
             "WHERE r.cityname = :cityname " +
-            "AND (:year IS NULL OR YEAR(r.timestamp) = :year) " +
+            "AND (:yearStart IS NULL OR (r.timestamp >= :yearStart AND r.timestamp < :yearEnd)) " +
             "AND (:typeCodes IS NULL OR r.typecode IN :typeCodes)")
     List<Region> findByCityAndFilters(
             @Param("cityname") String cityname,
-            @Param("year") Integer year,
+            @Param("yearStart") LocalDateTime yearStart,
+            @Param("yearEnd") LocalDateTime yearEnd,
             @Param("typeCodes") List<String> typeCodes,
+            Pageable pageable
+    );
+
+    @Query(
+            value = "SELECT r.* FROM regions r " +
+                    "WHERE r.marlon IS NOT NULL AND r.marlat IS NOT NULL " +
+                    "AND r.marlon BETWEEN :minLon AND :maxLon " +
+                    "AND r.marlat BETWEEN :minLat AND :maxLat " +
+                    "AND (:yearStart IS NULL OR (r.timestamp >= :yearStart AND r.timestamp < :yearEnd)) " +
+                    "AND (:typeCodesEmpty = true OR r.typecode IN (:typeCodes)) " +
+                    "AND ST_Intersects(" +
+                    "ST_GeomFromText(:polygonWkt), " +
+                    "ST_GeomFromText(CONCAT('POINT(', r.marlon, ' ', r.marlat, ')'))" +
+                    ")",
+            nativeQuery = true
+    )
+    List<Region> findByPolygon(
+            @Param("polygonWkt") String polygonWkt,
+            @Param("minLon") double minLon,
+            @Param("maxLon") double maxLon,
+            @Param("minLat") double minLat,
+            @Param("maxLat") double maxLat,
+            @Param("yearStart") LocalDateTime yearStart,
+            @Param("yearEnd") LocalDateTime yearEnd,
+            @Param("typeCodes") List<String> typeCodes,
+            @Param("typeCodesEmpty") boolean typeCodesEmpty,
+            Pageable pageable
+    );
+
+    @Query(
+            value = "SELECT r.* FROM regions r " +
+                    "WHERE r.marlon IS NOT NULL AND r.marlat IS NOT NULL " +
+                    "AND r.marlon BETWEEN :minLon AND :maxLon " +
+                    "AND r.marlat BETWEEN :minLat AND :maxLat " +
+                    "AND (:yearStart IS NULL OR (r.timestamp >= :yearStart AND r.timestamp < :yearEnd)) " +
+                    "AND (:typeCodesEmpty = true OR r.typecode IN (:typeCodes))",
+            nativeQuery = true
+    )
+    List<Region> findByBoundingBox(
+            @Param("minLon") double minLon,
+            @Param("maxLon") double maxLon,
+            @Param("minLat") double minLat,
+            @Param("maxLat") double maxLat,
+            @Param("yearStart") LocalDateTime yearStart,
+            @Param("yearEnd") LocalDateTime yearEnd,
+            @Param("typeCodes") List<String> typeCodes,
+            @Param("typeCodesEmpty") boolean typeCodesEmpty,
             Pageable pageable
     );
 }
